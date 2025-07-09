@@ -34,8 +34,38 @@ A protein-protein interaction (PPI) prediction pipeline using MEGADOCK, HDOCK, a
 
 ```bash
 cd ~/software  # or any directory of your choice
-git clone git@github.com:lihongxiang97/PPI-Prediction.git
+git clone https://github.com/lihongxiang97/PPI-Prediction.git
 ```
 
 **\*\*Note\*\***
 Before you use PPI-Prediction, you must install MEGADOCK, HDOCK and Alphafold3.
+
+## Preparing input files
+
+Protein ID pair list and protein sequence fasta file are required for running PPI-prediction successfully.
+
+1.```Protein_pair.list``` is in the following format (tab separated):
+```
+ID1  ID2
+ID1  ID3
+ID2  ID4
+ID4  ID5
+```
+
+2. ```pep.fa``` is in the following format:
+```
+>ID1
+sequence.....
+>ID2
+sequence.....
+>ID3
+sequence.....
+>ID4
+sequence.....
+>ID5
+sequence.....
+```
+
+## Running
+
+
