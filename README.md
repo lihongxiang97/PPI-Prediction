@@ -5,7 +5,7 @@ A protein-protein interaction (PPI) prediction pipeline using MEGADOCK, HDOCK, a
 | | |
 | --- | --- |
 | Authors | Hongxiang Li ([Hongxiang Li](https://github.com/lihongxiang97)) |
-| Email   | <qiaoxin@njau.edu.cn> |
+| Email   | <2022204047@njau.stu.edu.cn> |
 
 ## The schematic diagram of DupGen_finder pipeline
 <p align="center">
@@ -13,7 +13,7 @@ A protein-protein interaction (PPI) prediction pipeline using MEGADOCK, HDOCK, a
 <p align="center">
   
 <t align="center">
-  Figure 1: The flowchart of PPI-prediction pipeline
+  The flowchart of PPI-prediction pipeline
 </t>
 
 ## Contents
@@ -26,6 +26,8 @@ A protein-protein interaction (PPI) prediction pipeline using MEGADOCK, HDOCK, a
 
 ## Dependencies
 
+- docker
+- pymol
 - [MEGADOCK](https://github.com/akiyamalab/MEGADOCK)
 - [HDOCK](http://hdock.phys.hust.edu.cn/)
 - [AlphaFold3](https://github.com/google-deepmind/alphafold3)
@@ -67,5 +69,26 @@ sequence.....
 ```
 
 ## Running
+The PPI-Prediction pipeline proceeds in the following main steps:
 
+## Step 1: Predict 3D structures of all proteins using AlphaFold3
+You need to generate 3D structures of all individual proteins using AlphaFold3. This step must be completed before docking.
 
+```bash
+python scripts/run_alphafold3.py \
+    --fasta data/pep.fa \
+    --output_dir data/pdbs/
+```
+This script will generate a .pdb structure for each protein ID in the FASTA file.
+
+The output directory (e.g., data/pdbs/) will contain all predicted structures.
+
+## Step 2: Run MEGADOCK for rigid-body docking
+After protein structures are ready, MEGADOCK is used to perform fast rigid-body docking for each protein pair.
+
+```bash
+python scripts/run_megadock.py \
+    --pair_file data/Protein_pair.list \
+    --pdb_dir data/pdbs/ \
+    --output_dir results/megadock/
+```
