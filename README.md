@@ -9,7 +9,7 @@ A protein-protein interaction (PPI) prediction pipeline using MEGADOCK, HDOCK, a
 
 ## The schematic diagram of DupGen_finder pipeline
 <p align="center">
-<img src="https://github.com/lihongxiang97/PPI-Prediction/blob/main/data/flowchart.png"  height="500" width="300">
+<img src="https://github.com/lihongxiang97/PPI-Prediction/blob/main/data/flowchart.png"  height="800">
 <p align="center">
   
 <t align="center">
