@@ -26,8 +26,9 @@ A protein-protein interaction (PPI) prediction pipeline using MEGADOCK, HDOCK, a
 
 ## Dependencies
 
+- python==3.12.9
+- pymol-open-source==3.1.0
 - docker
-- pymol
 - [MEGADOCK](https://github.com/akiyamalab/MEGADOCK)
 - [HDOCK](http://hdock.phys.hust.edu.cn/)
 - [AlphaFold3](https://github.com/google-deepmind/alphafold3)
