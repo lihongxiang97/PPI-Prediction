@@ -77,7 +77,6 @@ You need to generate 3D structures of all individual proteins using AlphaFold3. 
 
 ```bash
 python scripts/run_alphafold3.py \
-    --list data/Protein_pair.list
     --fasta data/pep.fa \
     --output_dir data/pdbs/
 ```
