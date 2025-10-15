@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-# Hongxiang Li, 2025/07/09
+# Hongxiang Li, 2025/07/09 (Modified: add pdbs symlink + parallel support)
 
 import os
 import argparse
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 def get_pdb_length(pdb_file):
     """统计PDB中CA原子的数量"""
@@ -16,6 +17,7 @@ def get_pdb_length(pdb_file):
                 count += 1
     return count
 
+
 def run_hdock_on_pair(id1, id2, pdb_dir, output_dir, hdock_path=None):
     pdb1 = os.path.join(pdb_dir, f"{id1}.pdb")
     pdb2 = os.path.join(pdb_dir, f"{id2}.pdb")
@@ -24,37 +26,43 @@ def run_hdock_on_pair(id1, id2, pdb_dir, output_dir, hdock_path=None):
         print(f"[WARNING] Missing PDB file for {id1} or {id2}")
         return None
 
-    # 判断长度
+    # 判断长度，决定谁是 R/L
     len1 = get_pdb_length(pdb1)
     len2 = get_pdb_length(pdb2)
+    R, L = (id1, id2) if len1 >= len2 else (id2, id1)
 
-    if len1 >= len2:
-        R, L = id1, id2
-    else:
-        R, L = id2, id1
-
-    # 输出文件名（保持ID顺序，用户可识别）
+    # 输出文件名
     out_name = f"{R}-{L}.out"
     out_pdb = f"{out_name}.pdb"
 
-    # HDOCK 命令
+    # 准备命令路径
     hdock_cmd = f"{hdock_path}/hdock" if hdock_path else "hdock"
     createpl_cmd = f"{hdock_path}/createpl" if hdock_path else "createpl"
 
     # 切换目录执行 HDOCK
     cwd = os.getcwd()
     os.makedirs(output_dir, exist_ok=True)
+
+    # 创建软链接到 pdb_dir
+    symlink_path = os.path.join(output_dir, "pdbs")
+    if not os.path.exists(symlink_path):
+        try:
+            os.symlink(os.path.abspath(pdb_dir), symlink_path)
+            print(f"[INFO] Linked pdbs -> {pdb_dir}")
+        except FileExistsError:
+            pass
+
     os.chdir(output_dir)
 
     try:
         subprocess.run([
             hdock_cmd,
-            f"{pdb_dir}/{R}.pdb",
-            f"{pdb_dir}/{L}.pdb",
+            f"pdbs/{R}.pdb",
+            f"pdbs/{L}.pdb",
             "-spacing", "1.2",
             "-angle", "15",
             "-out", out_name
-        ], check=True)
+        ], check=True, text=True)
 
         subprocess.run([
             createpl_cmd,
@@ -71,43 +79,66 @@ def run_hdock_on_pair(id1, id2, pdb_dir, output_dir, hdock_path=None):
                     if line.startswith("REMARK Score:"):
                         score = line.strip().replace("REMARK Score: ", "")
                         return R, L, float(score)
-    except Exception as e:
+
+    except subprocess.CalledProcessError as e:
         print(f"[ERROR] Failed for {id1}-{id2}: {e}")
+    except Exception as e:
+        print(f"[ERROR] Unexpected error for {id1}-{id2}: {e}")
     finally:
         os.chdir(cwd)
 
     return None
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Run HDOCK for protein pairs")
+    parser = argparse.ArgumentParser(description="Run HDOCK for protein pairs in parallel")
     parser.add_argument("--pair_list", required=True, help="Protein pair list file")
     parser.add_argument("--pdb_dir", required=True, help="Directory with PDB files")
     parser.add_argument("--output_dir", required=True, help="Directory to store HDOCK outputs")
     parser.add_argument("--hdock_path", default=None, help="Optional path to HDOCK executables")
     parser.add_argument("--result_file", default="hdock_result.txt", help="Output result file")
-
+    parser.add_argument("-t", "--threads", type=int, default=8, help="Number of parallel HDOCK tasks (default: 8)")
     args = parser.parse_args()
 
-    results = []
-
+    # 读取所有配对
+    pairs = []
     with open(args.pair_list, "r") as f:
         for line in f:
             if line.strip() and not line.startswith("ID"):
                 id1, id2 = line.strip().split()
-                result = run_hdock_on_pair(id1, id2, args.pdb_dir, args.output_dir, args.hdock_path)
+                pairs.append((id1, id2))
+
+    print(f"[INFO] Loaded {len(pairs)} pairs. Running with {args.threads} threads...")
+
+    results = []
+
+    # 并行运行 HDOCK
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        future_to_pair = {
+            executor.submit(run_hdock_on_pair, id1, id2, args.pdb_dir, args.output_dir, args.hdock_path): (id1, id2)
+            for id1, id2 in pairs
+        }
+
+        for future in as_completed(future_to_pair):
+            pair = future_to_pair[future]
+            try:
+                result = future.result()
                 if result:
+                    results.append(result)
                     R, L, score = result
-                    results.append((R, L, score))
+                    print(f"[OK] {R}-{L}: Score={score:.3f}")
+            except Exception as e:
+                print(f"[ERROR] Exception in {pair}: {e}")
 
-    # 按得分从高到低排序
+    # 排序并写出结果
     results.sort(key=lambda x: x[2], reverse=True)
-
-    # 写入结果
     with open(args.result_file, "w") as out:
         for R, L, score in results:
             out.write(f"{R}\t{L}\t{score:.4f}\n")
 
-    print(f"[DONE] HDOCK completed. Results saved to {args.result_file}")
+    print(f"[DONE] All {len(pairs)} pairs processed. Results saved to {args.result_file}")
+
 
 if __name__ == "__main__":
     main()
+
