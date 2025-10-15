@@ -74,6 +74,7 @@ The PPI-Prediction pipeline proceeds in the following main steps:
 
 ### Step 1: Predict 3D structures of all proteins using AlphaFold3
 You need to generate 3D structures of all individual proteins using AlphaFold3. This step must be completed before docking.
+The running script is designed based on the Docker installations of AlphaFold3 and MEGADOCK.
 
 ```bash
 python scripts/run_alphafold3.py \
