@@ -32,14 +32,13 @@ def run_hdock_on_pair(id1, id2, pdb_dir, output_dir, hdock_path=None):
     R, L = (id1, id2) if len1 >= len2 else (id2, id1)
 
     # 输出文件名
-    out_name = f"{R}-{L}.out"
-    out_pdb = f"{out_name}.pdb"
+    out_name = os.path.join(output_dir, f"{R}-{L}.out")
+    out_pdb = os.path.join(output_dir, f"{R}-{L}.out.pdb")
 
     # 准备命令路径
     hdock_cmd = f"{hdock_path}/hdock" if hdock_path else "hdock"
     createpl_cmd = f"{hdock_path}/createpl" if hdock_path else "createpl"
 
-    # 切换目录执行 HDOCK
     cwd = os.getcwd()
     os.makedirs(output_dir, exist_ok=True)
 
@@ -47,7 +46,7 @@ def run_hdock_on_pair(id1, id2, pdb_dir, output_dir, hdock_path=None):
     symlink_path = os.path.join(output_dir, "pdbs")
     if not os.path.exists(symlink_path):
         try:
-            os.symlink(os.path.abspath(pdb_dir), symlink_path)
+            os.symlink(pdb_dir, symlink_path)
             print(f"[INFO] Linked pdbs -> {pdb_dir}")
         except FileExistsError:
             pass
@@ -55,35 +54,58 @@ def run_hdock_on_pair(id1, id2, pdb_dir, output_dir, hdock_path=None):
     os.chdir(output_dir)
 
     try:
-        subprocess.run([
-            hdock_cmd,
-            f"pdbs/{R}.pdb",
-            f"pdbs/{L}.pdb",
-            "-spacing", "1.2",
-            "-angle", "15",
-            "-out", out_name
-        ], check=True, text=True)
+        # === 跳过逻辑 ===
+        if os.path.exists(out_pdb):
+            print(f"[SKIP] {R}-{L}: Final PDB exists, skip all.")
+            # 直接提取得分
+            with open(out_pdb) as f:
+                for line in f:
+                    if line.startswith("REMARK Score:"):
+                        score = line.strip().replace("REMARK Score: ", "")
+                        return R, L, float(score)
+            return None
 
-        subprocess.run([
-            createpl_cmd,
-            out_name,
-            out_pdb,
-            "-nmax", "1",
-            "-complex"
-        ], check=True)
+        elif os.path.exists(out_name):
+            print(f"[RESUME] {R}-{L}: Out file exists, run createpl only.")
+            subprocess.run([
+                createpl_cmd,
+                f"{R}-{L}.out",
+                f"{R}-{L}.out.pdb",
+                "-nmax", "1",
+                "-complex"
+            ], check=True)
+
+        else:
+            print(f"[RUN] {R}-{L}: Running hdock + createpl.")
+            subprocess.run([
+                hdock_cmd,
+                f"pdbs/{R}.pdb",
+                f"pdbs/{L}.pdb",
+                "-spacing", "1.2",
+                "-angle", "15",
+                "-out", f"{R}-{L}.out"
+            ], check=True, text=True)
+
+            subprocess.run([
+                createpl_cmd,
+                f"{R}-{L}.out",
+                f"{R}-{L}.out.pdb",
+                "-nmax", "1",
+                "-complex"
+            ], check=True)
 
         # 提取得分
-        if os.path.exists(out_pdb):
-            with open(out_pdb) as f:
+        if os.path.exists(f"{R}-{L}.out.pdb"):
+            with open(f"{R}-{L}.out.pdb") as f:
                 for line in f:
                     if line.startswith("REMARK Score:"):
                         score = line.strip().replace("REMARK Score: ", "")
                         return R, L, float(score)
 
     except subprocess.CalledProcessError as e:
-        print(f"[ERROR] Failed for {id1}-{id2}: {e}")
+        print(f"[ERROR] Failed for {R}-{L}: {e}")
     except Exception as e:
-        print(f"[ERROR] Unexpected error for {id1}-{id2}: {e}")
+        print(f"[ERROR] Unexpected error for {R}-{L}: {e}")
     finally:
         os.chdir(cwd)
 
@@ -99,6 +121,9 @@ def main():
     parser.add_argument("--result_file", default="hdock_result.txt", help="Output result file")
     parser.add_argument("-t", "--threads", type=int, default=8, help="Number of parallel HDOCK tasks (default: 8)")
     args = parser.parse_args()
+
+    args.output_dir = os.path.abspath(args.output_dir)
+    args.pdb_dir = os.path.abspath(args.pdb_dir)
 
     # 读取所有配对
     pairs = []
