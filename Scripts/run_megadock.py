@@ -91,11 +91,11 @@ def run_megadock(pdb1, pdb2, output_dir, pdb_dir, docker_image, n_decoys, t, cpu
 
 def main():
     parser = argparse.ArgumentParser(description="Run MEGADOCK for PPI prediction")
-    parser.add_argument("--pair_list", required=True, help="Protein pair list file (ID1 ID2)")
-    parser.add_argument("--pdb_dir", required=True, help="Directory containing PDB files")
-    parser.add_argument("--output_dir", required=True, help="MEGADOCK output directory")
-    parser.add_argument("--result_file", default="megadock_result.txt", help="File to save MEGADOCK scores")
-    parser.add_argument("--docker_image", default="hub.rat.dev/akiyamalab/megadock:gpu", help="Docker image for MEGADOCK")
+    parser.add_argument("-l","--pair_list", required=True, help="Protein pair list file (ID1 ID2)")
+    parser.add_argument("-d","--pdb_dir", required=True, help="Directory containing PDB files")
+    parser.add_argument("-od","--output_dir", required=True, help="MEGADOCK output directory")
+    parser.add_argument("-r","--result_file", default="megadock_result.txt", help="File to save MEGADOCK scores")
+    parser.add_argument("-i","--docker_image", default="hub.rat.dev/akiyamalab/megadock:gpu", help="Docker image for MEGADOCK")
     parser.add_argument("-N", type=int, default=10800, help="Number of decoys, default 10800")
     parser.add_argument("-t", type=int, default=3, help="Thread number for FFT, default 3")
     parser.add_argument("-e", type=int, default=32, help="Number of CPU cores (OMP_NUM_THREADS), default 32")
@@ -116,6 +116,7 @@ def main():
                     print(f"[WARNING] Skipping malformed line: {line.strip()}")
                     continue
                 id1, id2 = parts[0], parts[1]
+                id1, id2 = id1.lower(), id2.lower()   # ✅ 转为小写
                 pdb1 = os.path.join(args.pdb_dir, f"{id1}.pdb")
                 pdb2 = os.path.join(args.pdb_dir, f"{id2}.pdb")
 

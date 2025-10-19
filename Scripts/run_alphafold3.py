@@ -88,14 +88,14 @@ def run_docker_on_json(json_path, output_path, model_dir, db_dir, docker_image="
 
 def main():
     parser = argparse.ArgumentParser(description="Run AlphaFold3 in MSA/Inference/Prediction mode.")
-    parser.add_argument("--step", required=True, choices=["Msa", "Inference", "Prediction"], help="Execution step: Msa, Inference, or Prediction.")
-    parser.add_argument("--fasta", help="Input protein FASTA file (required for Msa and Prediction)")
-    parser.add_argument("--json_dir", required=True, help="Directory to store or read JSON files")
-    parser.add_argument("--output_dir", required=True, help="Directory to store outputs")
-    parser.add_argument("--model_dir", required=True, help="AlphaFold3 model parameter directory")
-    parser.add_argument("--database_dir", required=True, help="AlphaFold3 public database directory")
-    parser.add_argument("--docker_image", default="alphafold3", help="Docker image name")
-    parser.add_argument("--num_workers", type=int, default=6, help="Number of concurrent MSA jobs (Msa step only)")
+    parser.add_argument("-s","--step", required=True, choices=["Msa", "Inference", "Prediction"], help="Execution step: Msa, Inference, or Prediction.")
+    parser.add_argument("-fa","--fasta", help="Input protein FASTA file (required for Msa and Prediction)")
+    parser.add_argument("-j","--json_dir", required=True, help="Directory to store or read JSON files")
+    parser.add_argument("-od","--output_dir", required=True, help="Directory to store outputs")
+    parser.add_argument("-p","--parameter_dir", required=True, help="AlphaFold3 model parameter directory")
+    parser.add_argument("-d","--database_dir", required=True, help="AlphaFold3 public database directory")
+    parser.add_argument("-i","--docker_image", default="alphafold3", help="Docker image name")
+    parser.add_argument("-n","--num_workers", type=int, default=6, help="Number of concurrent MSA jobs (Msa step only)")
 
     args = parser.parse_args()
 

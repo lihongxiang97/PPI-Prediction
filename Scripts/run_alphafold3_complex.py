@@ -85,13 +85,13 @@ def run_docker_prediction(json_path, output_dir, model_dir, db_dir, docker_image
 
 def main():
     parser = argparse.ArgumentParser(description="AlphaFold3 Complex Prediction (pair-based)")
-    parser.add_argument("--pair", required=True, help="Protein pair list file")
-    parser.add_argument("--fasta", required=True, help="FASTA file containing all protein sequences")
-    parser.add_argument("--json_dir", required=True, help="Directory to save generated JSON files")
-    parser.add_argument("--output_dir", required=True, help="Directory to save prediction results")
-    parser.add_argument("--model_dir", required=True, help="AlphaFold3 model parameter directory")
-    parser.add_argument("--database_dir", required=True, help="AlphaFold3 public database directory")
-    parser.add_argument("--docker_image", default="alphafold3", help="Docker image name")
+    parser.add_argument("-l","--pair_list", required=True, help="Protein pair list file")
+    parser.add_argument("-fa","--fasta", required=True, help="FASTA file containing all protein sequences")
+    parser.add_argument("-jd","--json_dir", required=True, help="Directory to save generated JSON files")
+    parser.add_argument("-od","--output_dir", required=True, help="Directory to save prediction results")
+    parser.add_argument("-p","--model_dir", required=True, help="AlphaFold3 model parameter directory")
+    parser.add_argument("-d","--database_dir", required=True, help="AlphaFold3 public database directory")
+    parser.add_argument("-i","--docker_image", default="alphafold3", help="Docker image name")
     parser.add_argument("--convert_pdb", action="store_true", help="Convert CIF to PDB using PyMOL")
 
     args = parser.parse_args()

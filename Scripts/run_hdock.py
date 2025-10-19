@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Hongxiang Li, 2025/07/09 (Modified: add pdbs symlink + parallel support)
+# Hongxiang Li, 2025/07/09 (Modified: add pdbs symlink + parallel support + lowercase pair list)
 
 import os
 import argparse
@@ -114,23 +114,24 @@ def run_hdock_on_pair(id1, id2, pdb_dir, output_dir, hdock_path=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Run HDOCK for protein pairs in parallel")
-    parser.add_argument("--pair_list", required=True, help="Protein pair list file")
-    parser.add_argument("--pdb_dir", required=True, help="Directory with PDB files")
-    parser.add_argument("--output_dir", required=True, help="Directory to store HDOCK outputs")
-    parser.add_argument("--hdock_path", default=None, help="Optional path to HDOCK executables")
-    parser.add_argument("--result_file", default="hdock_result.txt", help="Output result file")
+    parser.add_argument("-l","--pair_list", required=True, help="Protein pair list file")
+    parser.add_argument("-d","--pdb_dir", required=True, help="Directory with PDB files")
+    parser.add_argument("-od","--output_dir", required=True, help="Directory to store HDOCK outputs")
+    parser.add_argument("-p","--hdock_path", default=None, help="Optional path to HDOCK executables")
+    parser.add_argument("-r","--result_file", default="hdock_result.txt", help="Output result file")
     parser.add_argument("-t", "--threads", type=int, default=8, help="Number of parallel HDOCK tasks (default: 8)")
     args = parser.parse_args()
 
     args.output_dir = os.path.abspath(args.output_dir)
     args.pdb_dir = os.path.abspath(args.pdb_dir)
 
-    # 读取所有配对
+    # ✅ 读取所有配对，并将字母转为小写
     pairs = []
     with open(args.pair_list, "r") as f:
         for line in f:
             if line.strip() and not line.startswith("ID"):
                 id1, id2 = line.strip().split()
+                id1, id2 = id1.lower(), id2.lower()   # ✅ 转为小写
                 pairs.append((id1, id2))
 
     print(f"[INFO] Loaded {len(pairs)} pairs. Running with {args.threads} threads...")
@@ -166,4 +167,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
