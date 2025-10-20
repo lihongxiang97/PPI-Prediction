@@ -160,7 +160,7 @@ def main():
                         run_docker_on_json,
                         json_path=path,
                         output_path=args.output_dir,
-                        model_dir=args.model_dir,
+                        model_dir=args.parameter_dir,
                         db_dir=args.database_dir,
                         docker_image=args.docker_image,
                         step=args.step
@@ -181,7 +181,7 @@ def main():
             run_docker_on_json(
                 json_path=path,
                 output_path=args.output_dir,
-                model_dir=args.model_dir,
+                model_dir=args.parameter_dir,
                 db_dir=args.database_dir,
                 docker_image=args.docker_image,
                 step=args.step,
