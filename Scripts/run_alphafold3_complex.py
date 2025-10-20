@@ -24,6 +24,7 @@ def parse_fasta(fasta_file):
             sequences[protein_id] = "".join(sequence)
     return sequences
 
+
 def convert_complex_to_json(protein_id1, protein_id2, seq1, seq2):
     return {
         "modelSeeds": [1],
@@ -31,28 +32,19 @@ def convert_complex_to_json(protein_id1, protein_id2, seq1, seq2):
         "version": 1,
         "name": f"{protein_id1}-{protein_id2}",
         "sequences": [
-            {
-                "protein": {
-                    "id": ["A"],
-                    "sequence": seq1
-                }
-            },
-            {
-                "protein": {
-                    "id": ["B"],
-                    "sequence": seq2
-                }
-            }
-        ]
+            {"protein": {"id": ["A"], "sequence": seq1}},
+            {"protein": {"id": ["B"], "sequence": seq2}},
+        ],
     }
+
 
 def run_docker_prediction(json_path, output_dir, model_dir, db_dir, docker_image, pdbs_dir=None):
     pair_name = os.path.basename(json_path).replace(".json", "")
     lower_pair_name = pair_name.lower()
     pair_out_dir = os.path.join(output_dir, lower_pair_name)
     os.makedirs(pair_out_dir, exist_ok=True)
-
     cif_file = os.path.join(pair_out_dir, f"{lower_pair_name}_model.cif")
+
     if os.path.exists(cif_file):
         print(f"[SKIP] Prediction already exists for {pair_name}. Skipping...")
         return
@@ -83,25 +75,54 @@ def run_docker_prediction(json_path, output_dir, model_dir, db_dir, docker_image
         else:
             print(f"[WARNING] Missing CIF file for {pair_name}. Cannot convert to PDB.")
 
+
+def extract_confidence(pair_name, output_dir, outfile):
+    """提取每个结果目录下的 ptm 和 iptm 值"""
+    summary_path = os.path.join(output_dir, pair_name.lower(), f"{pair_name.lower()}_summary_confidences.json")
+    if not os.path.exists(summary_path):
+        print(f"[WARNING] Missing summary file: {summary_path}")
+        return
+
+    try:
+        with open(summary_path, "r") as f:
+            data = json.load(f)
+            ptm = data.get("ptm", None)
+            iptm = data.get("iptm", None)
+            if ptm is None or iptm is None:
+                print(f"[WARNING] Missing ptm/iptm in {pair_name}")
+                return
+
+        with open(outfile, "a") as fout:
+            fout.write(f"{pair_name}\t{ptm}\t{iptm}\n")
+
+        print(f"[INFO] Recorded ptm/iptm for {pair_name}: PTM={ptm}, IPTM={iptm}")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to parse {summary_path}: {e}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="AlphaFold3 Complex Prediction (pair-based)")
-    parser.add_argument("-l","--pair_list", required=True, help="Protein pair list file")
-    parser.add_argument("-fa","--fasta", required=True, help="FASTA file containing all protein sequences")
-    parser.add_argument("-jd","--json_dir", required=True, help="Directory to save generated JSON files")
-    parser.add_argument("-od","--output_dir", required=True, help="Directory to save prediction results")
-    parser.add_argument("-p","--model_dir", required=True, help="AlphaFold3 model parameter directory")
-    parser.add_argument("-d","--database_dir", required=True, help="AlphaFold3 public database directory")
-    parser.add_argument("-i","--docker_image", default="alphafold3", help="Docker image name")
+    parser.add_argument("-l", "--pair_list", required=True, help="Protein pair list file")
+    parser.add_argument("-fa", "--fasta", required=True, help="FASTA file containing all protein sequences")
+    parser.add_argument("-jd", "--json_dir", required=True, help="Directory to save generated JSON files")
+    parser.add_argument("-od", "--output_dir", required=True, help="Directory to save prediction results")
+    parser.add_argument("-p", "--model_dir", required=True, help="AlphaFold3 model parameter directory")
+    parser.add_argument("-d", "--database_dir", required=True, help="AlphaFold3 public database directory")
+    parser.add_argument("-i", "--docker_image", default="alphafold3", help="Docker image name")
     parser.add_argument("--convert_pdb", action="store_true", help="Convert CIF to PDB using PyMOL")
-
+    parser.add_argument("-o", "--outfile", required=True, help="Output file to save ptm and iptm results")
     args = parser.parse_args()
 
     os.makedirs(args.json_dir, exist_ok=True)
     os.makedirs(args.output_dir, exist_ok=True)
-
     pdbs_dir = os.path.join(args.output_dir, "pdbs") if args.convert_pdb else None
 
     sequences = parse_fasta(args.fasta)
+
+    # 初始化输出文件
+    with open(args.outfile, "w") as f:
+        f.write("Pair\tPTM\tIPTM\n")
 
     with open(args.pair_list) as f:
         for line in f:
@@ -116,7 +137,8 @@ def main():
 
             json_obj = convert_complex_to_json(p1, p2, sequences[p1], sequences[p2])
             json_path = os.path.join(args.json_dir, f"{p1}-{p2}.json")
-            with open(json_path, 'w') as fjson:
+
+            with open(json_path, "w") as fjson:
                 json.dump(json_obj, fjson, indent=2)
 
             run_docker_prediction(
@@ -125,10 +147,14 @@ def main():
                 model_dir=args.model_dir,
                 db_dir=args.database_dir,
                 docker_image=args.docker_image,
-                pdbs_dir=pdbs_dir
+                pdbs_dir=pdbs_dir,
             )
 
-    print("[DONE] Complex structure prediction completed.")
+            # 新增提取 ptm/iptm
+            extract_confidence(f"{p1}-{p2}", args.output_dir, args.outfile)
+
+    print(f"[DONE] Complex structure prediction completed. Summary saved to {args.outfile}")
+
 
 if __name__ == "__main__":
     main()
