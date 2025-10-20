@@ -103,7 +103,7 @@ def main():
 
     sequences = parse_fasta(args.fasta)
 
-    with open(args.pair) as f:
+    with open(args.pair_list) as f:
         for line in f:
             parts = line.strip().split()
             if len(parts) < 2:

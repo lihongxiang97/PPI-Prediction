@@ -124,7 +124,8 @@ def main():
 
     args.output_dir = os.path.abspath(args.output_dir)
     args.pdb_dir = os.path.abspath(args.pdb_dir)
-
+    args.result_file = os.path.abspath(args.result_file)
+    
     # ✅ 读取所有配对，并将字母转为小写
     pairs = []
     with open(args.pair_list, "r") as f:
