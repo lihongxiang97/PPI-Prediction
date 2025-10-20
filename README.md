@@ -77,6 +77,30 @@ You need to generate 3D structures of all individual proteins using AlphaFold3. 
 The running script is designed based on the Docker installations of AlphaFold3 and MEGADOCK.
 
 ```bash
+python Scripts/run_alphafold3.py -h
+usage: run_alphafold3.py [-h] -s {Msa,Inference,Prediction} [-fa FASTA] -j JSON_DIR -od OUTPUT_DIR -p PARAMETER_DIR -d DATABASE_DIR [-i DOCKER_IMAGE] [-n NUM_WORKERS]
+
+Run AlphaFold3 in MSA/Inference/Prediction mode.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s {Msa,Inference,Prediction}, --step {Msa,Inference,Prediction}
+                        Execution step: Msa, Inference, or Prediction.
+  -fa FASTA, --fasta FASTA
+                        Input protein FASTA file (required for Msa and Prediction)
+  -j JSON_DIR, --json_dir JSON_DIR
+                        Directory to store or read JSON files
+  -od OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        Directory to store outputs
+  -p PARAMETER_DIR, --parameter_dir PARAMETER_DIR
+                        AlphaFold3 model parameter directory
+  -d DATABASE_DIR, --database_dir DATABASE_DIR
+                        AlphaFold3 public database directory
+  -i DOCKER_IMAGE, --docker_image DOCKER_IMAGE
+                        Docker image name
+  -n NUM_WORKERS, --num_workers NUM_WORKERS
+                        Number of concurrent MSA jobs (Msa step only)
+
 python scripts/run_alphafold3.py \
     --fasta data/pep.fa \
     --output_dir data/pdbs/
@@ -120,7 +144,7 @@ python scripts/run_alphafold3_complex.py \
 Finally, the three sources of interaction scores are merged and filtered to generate a list of high-confidence protein interactions.
 
 ```bash
-python scripts/score_merge.py \
+python scripts/merge_score.py \
     --megadock results/megadock/scores.tsv \
     --hdock results/hdock/scores.tsv \
     --af3 results/af3_complex/scores.tsv \
