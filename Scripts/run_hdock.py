@@ -125,6 +125,7 @@ def main():
     args.output_dir = os.path.abspath(args.output_dir)
     args.pdb_dir = os.path.abspath(args.pdb_dir)
     args.result_file = os.path.abspath(args.result_file)
+    args.hdock_path = os.path.abspath(args.hdock_path) if args.hdock_path else None
     
     # ✅ 读取所有配对，并将字母转为小写
     pairs = []
