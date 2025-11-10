@@ -36,7 +36,6 @@ def normalize_ids(df, id1_col="ID1", id2_col="ID2"):
     """将ID转为大写并按字母顺序重新排列，保证ID1 < ID2"""
     df[id1_col] = df[id1_col].str.upper()
     df[id2_col] = df[id2_col].str.upper()
-    # 排序ID对
     df[['ID1', 'ID2']] = pd.DataFrame(
         df[[id1_col, id2_col]].apply(lambda x: sorted([x[id1_col], x[id2_col]]), axis=1).tolist(),
         index=df.index
@@ -92,9 +91,23 @@ def main():
             for df in dfs[1:]:
                 merged = pd.merge(merged, df, on=merge_cols, how='outer')
 
-        # 排序并导出
+        # 排序
         merged = merged.sort_values(by=["ID1", "ID2"], ignore_index=True)
-        merged.to_csv(args.output, sep="\t", index=False)
+
+        # 输出文件
+        header_note = (
+            "MEGADOCK PPI Score > 12, 80% probability of interaction; "
+            "> 10, 50% probability of interaction; "
+            "> 8, 10% probability of interaction. "
+            "HDOCK docking score < -200, high probability of interaction. "
+            "pTM + ipTM > 0.75, indicating that the model's predictions of protein-protein interface "
+            "interactions and overall complex structure are highly reliable."
+        )
+
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(header_note + "\n")
+            merged.to_csv(f, sep="\t", index=False)
+
         print(f"✅ 合并完成，输出文件：{args.output}")
 
     except Exception as e:
